@@ -1,1 +1,1 @@
-# Parallel-computing---Nbody
+# Parallel computing - Nbody
