@@ -2,33 +2,33 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <time.h>
 
-// #define DEBUG
 #define ETA 0.05
 #define EPSILON 0.001
+#define SEED 42
 
 void compute_accelerations(Particle *p, unsigned int N, float *max_a, float epsilon);
 
 int main(int argc, char **argv) {
-    if (argc != 4) {
-        fprintf(stderr, "Use: %s <num. of particles> <num. of steps> <seed>\n", argv[0]);
+    if (argc != 3 && argc != 4) {
+        fprintf(stderr, "Use: %s <num. of particles> <num. of steps> [-p]\n", argv[0]);
         exit(1);
     }
     int arg1 = atoi(argv[1]);
     int arg2 = atoi(argv[2]);
-    int arg3 = atoi(argv[3]);
-    if (arg1 <= 0 || arg2 <= 0 || arg3 <= 0) {
-        fprintf(stderr, "Use: %s <num. of particles> <num. of steps> <seed>\n", argv[0]);
+    if (arg1 <= 0 || arg2 <= 0) {
+        fprintf(stderr, "Use: %s <num. of particles> <num. of steps> [-p]\n", argv[0]);
         exit(1);
     }
+    int print_positions = (argc == 4 && strcmp(argv[3], "-p") == 0);
 
     unsigned int N = (unsigned int) arg1;
     unsigned int N_steps = (unsigned int) arg2;
-    unsigned int seed = (unsigned int) arg3;
     float dt, dt_old, eta, epsilon, max_a;
-    Particle *p = generate_bodies(N, seed); 
+    Particle *p = generate_bodies(N, SEED);
     eta = ETA;
     epsilon = EPSILON;
   
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     // First step: use velocities
     compute_accelerations(p, N, &max_a, epsilon);
     dt = sqrt(eta * epsilon / max_a);
-    for (int i = 0; i < N; i++) {
+    for (unsigned int i = 0; i < N; i++) {
         p[i].x_old = p[i].x;
         p[i].y_old = p[i].y;
         p[i].z_old = p[i].z;
@@ -50,11 +50,11 @@ int main(int argc, char **argv) {
     }
     dt_old = dt;
 
-    for (int step = 1; step < N_steps; step++) {
+    for (unsigned int step = 1; step < N_steps; step++) {
         compute_accelerations(p, N, &max_a, epsilon);
         dt = sqrt(eta * epsilon / max_a);
-        
-        for (int i = 0; i < N; i++) {
+
+        for (unsigned int i = 0; i < N; i++) {
             float new_x = p[i].x + (p[i].x - p[i].x_old) * (dt/dt_old) + p[i].ax * dt * (dt + dt_old) / 2.0;
             float new_y = p[i].y + (p[i].y - p[i].y_old) * (dt/dt_old) + p[i].ay * dt * (dt + dt_old) / 2.0;
             float new_z = p[i].z + (p[i].z - p[i].z_old) * (dt/dt_old) + p[i].az * dt * (dt + dt_old) / 2.0;
@@ -77,11 +77,11 @@ int main(int argc, char **argv) {
 
     printf("%lf\n", elapsed);
 
-#ifdef DEBUG
-    for (int i = 0; i < N; i++) 
-        printf("%.6lf,%.6lf,%.6lf\n", p[i].x, p[i].y, p[i].z);
-#endif
+    if (print_positions)
+        for (unsigned int i = 0; i < N; i++)
+            printf("%.6f,%.6f,%.6f\n", p[i].x, p[i].y, p[i].z);
 
+    free(p);
     return 0;
 }
 
@@ -89,12 +89,12 @@ void compute_accelerations(Particle *p, unsigned int N, float *max_a, float epsi
     float epsilon_squared = epsilon * epsilon;
     *max_a = -1.0;
 
-    for (int i = 0; i < N; i++) {
+    for (unsigned int i = 0; i < N; i++) {
         float rx, ry, rz, r_squared;
         p[i].ax = 0;
         p[i].ay = 0;
         p[i].az = 0;
-        for (int j = 0; j < N; j++)
+        for (unsigned int j = 0; j < N; j++)
             if (i != j) {
                 rx = p[i].x - p[j].x;
                 ry = p[i].y - p[j].y;
